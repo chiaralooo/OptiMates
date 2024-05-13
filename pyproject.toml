@@ -16,7 +16,9 @@ authors = [
     { email = "chiaralo@ethz.ch", name = "Chiara Lombardo" },
 ]
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+  "LineageTree @git+https://github.com/BadPrograms/LineageTree-1.git"
+]
 
 [project.optional-dependencies]
 dev = [
