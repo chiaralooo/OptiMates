@@ -1,0 +1,33 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools", "wheel"]
+
+[project]
+name = "OptiMates"
+description = "Tracking pipeline using motile to find trajectories and training linajea to predict detections and movement vectors."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+  "Programming Language :: Python :: 3",
+]
+keywords = []
+license = { text = "BSD 3-Clause License" }
+authors = [
+    { email = "chiaralo@ethz.ch", name = "Chiara Lombardo" },
+]
+dynamic = ["version"]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  'pytest',
+  'pytest-cov',
+  'black',
+  'mypy',
+  'pdoc',
+  'pre-commit'
+]
+
+[project.urls]
+homepage = "https://github.com/chiaralooo/OptiMates"
+repository = "https://github.com/chiaralooo/OptiMates"

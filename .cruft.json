@@ -1,0 +1,20 @@
+{
+  "template": "https://github.com/adjavon/pycookie/",
+  "commit": "910de0797672ed991f5c4faef2ea8f3cbd39cf01",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "full_name": "Chiara Lombardo",
+      "email": "chiaralo@ethz.ch",
+      "github_username": "chiaralooo",
+      "project_name": "OptiMates",
+      "project_slug": "OptiMates",
+      "project_short_description": "Tracking pipeline using motile to find trajectories and training linajea to predict detections and movement vectors.",
+      "_copy_without_render": [
+        ".github/workflows/tests.yaml"
+      ],
+      "_template": "https://github.com/adjavon/pycookie/"
+    }
+  },
+  "directory": null
+}
