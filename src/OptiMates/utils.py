@@ -17,6 +17,7 @@ def add_cand_edges(
     cand_graph: nx.DiGraph,
     max_edge_distance: float,
     node_frame_dict: None | dict[int, list[Any]] = None,
+    max_skip_frames: int = 1
 ) -> None:
     """Add candidate edges to a candidate graph by connecting all nodes in adjacent
     frames that are closer than max_edge_distance. Also adds attributes to the edges.
@@ -36,15 +37,17 @@ def add_cand_edges(
         node_frame_dict = _compute_node_frame_dict(cand_graph)
 
     frames = sorted(node_frame_dict.keys())
+    print(frames)
     prev_node_ids = node_frame_dict[frames[0]]
     prev_kdtree = create_kdtree(cand_graph, prev_node_ids)
     for frame in tqdm(frames):
-        if frame + 1 not in node_frame_dict:
-            continue
-        next_node_ids = node_frame_dict[frame + 1]
-        next_kdtree = create_kdtree(cand_graph, next_node_ids)
+        # here added skipping frames
+        for i in range(1, max_skip_frames + 1):
+            if frame + i in node_frame_dict:
+                next_node_ids = node_frame_dict[frame + i]
+                next_kdtree = create_kdtree(cand_graph, next_node_ids)
 
-        matched_indices = prev_kdtree.query_ball_tree(next_kdtree, max_edge_distance)
+                matched_indices = prev_kdtree.query_ball_tree(next_kdtree, max_edge_distance)
 
         for prev_node_id, next_node_indices in zip(prev_node_ids, matched_indices):
             for next_node_index in next_node_indices:
@@ -73,7 +76,7 @@ def create_kdtree(cand_graph: nx.DiGraph, node_ids: Iterable[Any]) -> KDTree:
     positions = [cand_graph.nodes[node]["pos"] for node in node_ids]
     return KDTree(positions)
 
-def to_motile(lT: lineageTree, crop:int = None, max_dist =200):
+def to_motile(lT: lineageTree, crop:int = None, max_dist =200, max_skip_frames=1):
     fmt = nx.DiGraph()
     if not crop:
         crop = lT.t_e
@@ -85,7 +88,8 @@ def to_motile(lT: lineageTree, crop:int = None, max_dist =200):
             fmt.add_node(time_node, **{"t":lT.time[time_node], "pos": lT.pos[time_node], "score": 1})
             # for suc in lT.successor:
             #     fmt.add_edge(time_node, suc, **{"score":0})
-        add_cand_edges(fmt, max_dist)
+    
+    add_cand_edges(fmt, max_dist, max_skip_frames=max_skip_frames)
 
             
     return fmt
