@@ -2,10 +2,6 @@ from re import T
 from funlib.learn.torch.models import UNet
 
 import gunpowder as gp
-import daisy
-import funlib.persistence
-
-import torch
 import time
 
 config = {
@@ -16,7 +12,7 @@ config = {
 }
 
 def run_training(config):
-    pipeline, snapshot_datasets, request = get_pipeline(config)
+    pipeline, request = get_pipeline(config)
 
         # finalize pipeline and start training
     with gp.build(pipeline):
@@ -51,13 +47,12 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key,points_key, voxel_
 
 
 def get_pipeline(config, augment_only=False):
-    voxel_size = [5,1,1]
+    voxel_size = gp.Coordinate((1,5,1,1))
+
     raw_key = gp.ArrayKey("RAW")
     points_key = gp.Graphkey("POINTS")
     cell_indicator = gp.ArrayKey('CELL_INDICATOR')
     pred_cell_indicator = gp.ArrayKey('PRED_CELL_INDICATOR')
-
-    gradient_cell_indicator = gp.ArrayKey('GRAD_CELL_INDICATOR')
 
     points_source, csv_source = get_sources(**config, voxel_size=voxel_size)
 
@@ -66,7 +61,7 @@ def get_pipeline(config, augment_only=False):
                 cell_indicator,
                 array_spec=gp.ArraySpec(voxel_size=voxel_size),
                 settings=gp.RasterizationSettings(
-                    radius=20,
+                    radius=20,  # set this based on data
                     mode='peak'))
     
     simple_augment = gp.SimpleAugment(
@@ -95,7 +90,6 @@ def get_pipeline(config, augment_only=False):
         checkpoint_basename="train_linajea",
         inputs={ 'raw': raw_key, },
         outputs={"pred_indicator": cell_indicator},
-        gradients={"gradients": gradient_cell_indicator},
         loss_inputs={"points": points_key},
         log_dir="train_logs",
         save_every=100
@@ -119,7 +113,7 @@ def get_pipeline(config, augment_only=False):
         # visualize
     snapshot_node = gp.Snapshot(snapshot_datasets,
                     output_dir='snapshots',
-                    output_filename='snapshot_{iteration}.hdf',
+                    output_filename='snapshot_{iteration}.zarr',
                     additional_request=snapshot_request,
                     every=config.train.snapshot_stride,
                     )
@@ -131,6 +125,6 @@ def get_pipeline(config, augment_only=False):
         print_profiling
     )
     
-    return train_pipeline, snapshot_datasets, request
+    return train_pipeline, request
 
 
