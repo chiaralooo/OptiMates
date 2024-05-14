@@ -12,6 +12,20 @@ from scipy.spatial import KDTree
 from skimage.measure import regionprops
 from tqdm import tqdm
 
+def read_points_fromLT(lt, crop=-1):
+    points = []
+    print(lt.__dict__)
+    lt['nodes']
+    frames = list(lt['time_nodes'].keys())
+    if crop == -1:
+        crop = len(frames)
+    for i, frame in enumerate(frames):
+        if frame <= crop:
+            nodes = lt['time_nodes'][frame]
+            for node in nodes:
+                pos = lt['pos'][node]
+                points.append([frame, pos[1], pos[0]])
+    return np.array(points)
 
 def add_cand_edges(
     cand_graph: nx.DiGraph,
