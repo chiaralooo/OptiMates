@@ -17,7 +17,13 @@ authors = [
 ]
 dynamic = ["version"]
 dependencies = [
-  "LineageTree @git+https://github.com/BadPrograms/LineageTree-1.git"
+  "LineageTree @git+https://github.com/BadPrograms/LineageTree-1.git",
+  "funlib.persistence @git+https://github.com/funkelab/funlib.persistence.git",
+  "funlib.learn.torch @git+https://github.com/funkelab/funlib.learn.torch.git",
+  "gunpowder",
+  "daisy",
+  "torch",
+  "linajea @git+https://github.com/funkelab/linajea.git",
 ]
 
 [project.optional-dependencies]
