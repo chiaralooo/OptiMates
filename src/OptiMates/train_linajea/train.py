@@ -1,22 +1,23 @@
 from re import T
 from funlib.learn.torch.models import UNet
-
 import gunpowder as gp
 import time
 
-config = {
-    "raw_channel": "t00000/s00/0",  #TODO: rewrite our target time points into a zarr
+data_config = {
+    "raw_channel": "t00000/s00/0",  
     "raw_data_path": "/group/dl4miacourse/....",
     "csv_path": "...",
     "frames": [200, 300],
+    "ndims": 4
 }
 
-def run_training(config):
-    pipeline, request = get_pipeline(config)
 
-        # finalize pipeline and start training
+
+def run_training(data_config, model):
+    pipeline, request = get_pipeline(data_config, model)
+
     with gp.build(pipeline):
-        max_iterations = 100
+        max_iterations = 100  # you will definitely want more iterations
         print("Starting training...")
         for i in max_iterations:
             start = time.time()
@@ -27,8 +28,8 @@ def run_training(config):
                 "Batch: iteration=%d, time=%f",
                 i, time_of_iteration)
 
-def get_sources(raw_data_path, raw_channel, csv_path, raw_key,points_key, voxel_size):
-    """Get gunpowder nodes to do sources"""
+def get_sources(raw_data_path, raw_channel, csv_path, raw_key, points_key, voxel_size, ndims):
+    """Get gunpowder nodes to read the data"""
     raw_spec = {
         raw_key: gp.ArraySpec(
             interpolatable=True,
@@ -41,20 +42,27 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key,points_key, voxel_
     csv_source = gp.CsvPointsSource(
         csv_path,
         points_key,
-        ndims=4,  # first 4 coordinates in csv will be the location
+        ndims=ndims,  # first 4 coordinates in csv will be the location
     )
     return raw_source, csv_source
 
 
-def get_pipeline(config, augment_only=False):
+def get_pipeline(config, model, augment_only=False):
     voxel_size = gp.Coordinate((1,5,1,1))
 
     raw_key = gp.ArrayKey("RAW")
-    points_key = gp.Graphkey("POINTS")
+    points_key = gp.GraphKey("POINTS")
     cell_indicator = gp.ArrayKey('CELL_INDICATOR')
     pred_cell_indicator = gp.ArrayKey('PRED_CELL_INDICATOR')
 
-    points_source, csv_source = get_sources(**config, voxel_size=voxel_size)
+    points_source, csv_source = get_sources(
+        config["raw_data_path"],
+        config["raw_channel"],
+        config["csv_path"],
+        raw_key,
+        points_key,
+        config['voxel_size'],
+        config['ndims'])
 
     rasterize_graph = gp.RasterizeGraph(
                 points_key,
@@ -70,19 +78,17 @@ def get_pipeline(config, augment_only=False):
         # z (which we want to exclude) is dim 1 or dim 3
 
     augmentation_pipeline = (
-            (points_source, csv_source) +
-            gp.RandomProvider() +
-            rasterize_graph +
-            simple_augment) 
+            (points_source, csv_source) + gp.MergeProvider()) # +
+            # gp.RandomProvider() +
+            # rasterize_graph +
+            # simple_augment) 
     if augment_only:
-        return augmentation_pipeline, None
+        return augmentation_pipeline
     
-    model = UNet()  # TODO: parameters
+
     loss = ...
     opt = ...
 
-    input_size = ...
-    output_size = ...
     train_node = gp.torch.Train(
         model=model,
         loss=loss,
@@ -94,11 +100,18 @@ def get_pipeline(config, augment_only=False):
         log_dir="train_logs",
         save_every=100
     )
+
+    # construct a request that will determine the inputs and
+    # outputs that we get
+    input_size = ...
+    output_size = ...
     request = gp.BatchRequest()
-    request.add(raw_key, input_size)
-    request.add(points_key, input_size)
-    request.add(cell_indicator, input_size)
-    request.add(pred_cell_indicator, output_size)
+    request.add(raw_key, gp.Coordinate(input_size))
+    request.add(points_key, gp.Coordinate(input_size))
+    request.add(cell_indicator, gp.Coordinate(input_size))
+    request.add(pred_cell_indicator, gp.Coordinate(output_size))
+
+    # construct snapshots for debugging purposes
     snapshot_request = gp.BatchRequest({
         raw_key: request[raw_key],
         cell_indicator: request[cell_indicator],
@@ -118,6 +131,8 @@ def get_pipeline(config, augment_only=False):
                     every=config.train.snapshot_stride,
                     )
     print_profiling = gp.PrintProfilingStats(every=10)
+
+    # add training, snapshots, and profiling to the pipeline
     train_pipeline = (
         augmentation_pipeline +
         train_node +
