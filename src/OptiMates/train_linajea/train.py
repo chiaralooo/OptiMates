@@ -3,13 +3,13 @@ from funlib.learn.torch.models import UNet
 import gunpowder as gp
 import time
 
-data_config = {
-    "raw_channel": "t00000/s00/0",  
-    "raw_data_path": "/group/dl4miacourse/....",
-    "csv_path": "...",
-    "frames": [200, 300],
-    "ndims": 4
-}
+# data_config = {
+#     "raw_channel": "t00000/s00/0",  
+#     "raw_data_path": "/group/dl4miacourse/....",
+#     "csv_path": "...",
+#     "frames": [200, 300],
+#     "ndims": 4
+# }
 
 
 
@@ -42,7 +42,8 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key, points_key, voxel
     csv_source = gp.CsvPointsSource(
         csv_path,
         points_key,
-        ndims=ndims,  # first 4 coordinates in csv will be the location
+        ndims=ndims,  
+        sep= ","
     )
     return raw_source, csv_source
 
@@ -72,16 +73,16 @@ def get_pipeline(config, model, augment_only=False):
                     radius=20,  # set this based on data
                     mode='peak'))
     
-    simple_augment = gp.SimpleAugment(
-        mirror_only=[1, 2, 3],
-        transpose_only=[2, 3])  # this should be x and y, but I am not sure if
+    # simple_augment = gp.SimpleAugment(
+    #     mirror_only=[1, 2, 3],
+    #     transpose_only=[2, 3])  # this should be x and y, but I am not sure if
         # z (which we want to exclude) is dim 1 or dim 3
 
     augmentation_pipeline = (
-            (points_source, csv_source) + gp.MergeProvider()) # +
-            # gp.RandomProvider() +
-            # rasterize_graph +
-            # simple_augment) 
+            (points_source, csv_source) + gp.MergeProvider() +
+            gp.RandomProvider() +
+            rasterize_graph) # +
+           # simple_augment) 
     if augment_only:
         return augmentation_pipeline
     
@@ -128,7 +129,7 @@ def get_pipeline(config, model, augment_only=False):
                     output_dir='snapshots',
                     output_filename='snapshot_{iteration}.zarr',
                     additional_request=snapshot_request,
-                    every=config.train.snapshot_stride,
+                    every=20,
                     )
     print_profiling = gp.PrintProfilingStats(every=10)
 

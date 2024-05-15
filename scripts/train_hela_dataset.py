@@ -12,7 +12,7 @@ def hela_config():
     return {
         "raw_channel": "01",  
         "raw_data_path": Path(appdir.user_data_dir) / "Fluo-N2DL-HeLa.zarr",
-        "csv_path": "/Users/malinmayorc/code/OptiMates/tests/05152024_091740_test_tracks.csv",
+        "csv_path": "/Users/malinmayorc/code/OptiMates/tests/test_tracks.csv",
         "ndims": 3,
         "voxel_size": (1, 1, 1)
     }
@@ -24,7 +24,7 @@ def get_model():
             in_channels=1,
             num_fmaps=16,
             fmap_inc_factor=2,
-            downsample_factors=[(2,2,2),(2,2,2),(2,2,2)],
+            downsample_factors=[(1,2,2),(1,2,2),(1,2,2)],
             activation='ReLU',
             voxel_size=(1, 1, 1),
             num_heads=1,
