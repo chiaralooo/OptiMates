@@ -3,16 +3,16 @@ from appdirs import AppDirs
 from pathlib import Path
 
 from funlib.learn.torch.models import UNet
-from OptiMates.train_linajea.train import run_training, get_pipeline
+from OptiMates.train_linajea.train_par_haw import run_training, get_pipeline
 import gunpowder as gp
 import matplotlib.pyplot as plt
 
 def hela_config():
     appdir = AppDirs("motile-plugin")
     return {
-        "raw_channel": "00",  
+        "raw_channel": "view_0_tp_200-300",  
         "raw_data_path": "/group/dl4miacourse/projects/OptiMates/JR_22-10-18/fusedStack.corrected.zarr",
-        "csv_path": "/group/dl4miacourse/projects/OptiMates/JR_22-10-18/karkinos5.zarr",
+        "csv_path": "/group/dl4miacourse/projects/OptiMates/JR_22-10-18/karkinos5.csv",
         "ndims": 4,
         "voxel_size": (1, 1, 5)
     }
