@@ -151,6 +151,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+Fluo*
+*.zarr
+
 # pytype static type analyzer
 .pytype/
 
