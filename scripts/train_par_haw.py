@@ -1,7 +1,8 @@
 
 from appdirs import AppDirs
 from pathlib import Path
-
+import zarr
+import torch
 from funlib.learn.torch.models import UNet
 from OptiMates.train_linajea.train import run_training, get_pipeline
 import gunpowder as gp
@@ -24,7 +25,7 @@ def get_model():
             in_channels=1,
             num_fmaps=16,
             fmap_inc_factor=2,
-            downsample_factors=[(1,2,2),(1,2,2),(1,2,2)],
+            downsample_factors=[(1,2,2),(1,2,2),(2,2,2)],
             activation='ReLU',
             voxel_size=(5, 1, 1),
             num_heads=1,
@@ -32,32 +33,44 @@ def get_model():
             padding='same')
 
 
+
+
 if __name__ == "__main__":
     data_config = hela_config()
-    model = get_model() 
-    pipeline = get_pipeline(data_config, model, augment_only=True)
-
+    model = get_model()
+    loss = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(model.parameters())
 
     # construct a request that will determine the inputs and
     # outputs that we get
-    input_size =(10, 15, 256, 256)
-    output_size = (10, 15, 256, 256)
 
+    input_size =(2, 15, 100, 100)
+    output_size = (2, 15, 100, 100)
     raw_key = gp.ArrayKey("RAW")
     points_key = gp.GraphKey("POINTS")
     cell_indicator = gp.ArrayKey('CELL_INDICATOR')
+    pred_cell_indicator = gp.ArrayKey('PRED_CELL_INDICATOR')
     request = gp.BatchRequest()
     request.add(raw_key, gp.Coordinate(input_size))
     request.add(points_key, gp.Coordinate(input_size))
     request.add(cell_indicator, gp.Coordinate(input_size))
+    pipeline, request = get_pipeline(
+        data_config,
+        model,
+        loss,
+        optimizer,
+        input_size,
+        output_size,
+        # augment_only=False
+        )
+
     with gp.build(pipeline):
-        root =zarr.open("test.zarr")
-        for i in range(5):
+        root =zarr.open("test.zarr", 'w')
+        for i in range(3):
 
             batch = pipeline.request_batch(request)
             iteration = root.create_group(i)
             iteration["raw"] = batch[raw_key].data
             iteration["cell_indicator"] = batch[cell_indicator].data
+            iteration["pred_indicator"] = batch[pred_cell_indicator].data
     # run_training(data_config, model)
-
-# _par_haw
