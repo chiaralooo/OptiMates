@@ -106,7 +106,7 @@ def to_motile(lT: lineageTree, crop: int = None, max_dist=200, max_skip_frames=1
         for time_node in lT.time_nodes[time]:
             fmt.add_node(
                 time_node,
-                **{"t": lT.time[time_node], "pos": lT.pos[time_node], "score": 1},
+                **{"t": lT.time[time_node], "pos": lT.pos[time_node][::-1], "score": 1},
             )
             # for suc in lT.successor:
             #     fmt.add_edge(time_node, suc, **{"score":0})
