@@ -12,9 +12,9 @@ def hela_config():
     return {
         "raw_channel": "00",  
         "raw_data_path": "/group/dl4miacourse/projects/OptiMates/JR_22-10-18/fusedStack.corrected.zarr",
-        "csv_path": "/Users/malinmayorc/code/OptiMates/tests/test_tracks.csv",
-        "ndims": 3,
-        "voxel_size": (1, 1, 1)
+        "csv_path": "/group/dl4miacourse/projects/OptiMates/JR_22-10-18/karkinos5.zarr",
+        "ndims": 4,
+        "voxel_size": (1, 1, 5)
     }
 
 def get_model():
