@@ -27,10 +27,10 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key, points_key, voxel
             interpolatable=True,
             voxel_size=voxel_size)
     }
-    raw_source = gp.ZarrSource(
+    raw_source = (gp.ZarrSource(
             raw_data_path,
             datasets={raw_key: raw_channel},
-            array_specs=raw_spec)
+            array_specs=raw_spec) + gp.Normalize(raw_key))
     csv_source = gp.CsvPointsSource(
         csv_path,
         points_key,
@@ -40,7 +40,15 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key, points_key, voxel
     return raw_source, csv_source
 
 
-def get_pipeline(config, model, augment_only=False):
+def get_pipeline(
+    config,
+    model,
+    loss,
+    optimizer,
+    input_size,
+    output_size,
+    augment_only=False
+):
     voxel_size = config['voxel_size']
 
     raw_key = gp.ArrayKey("RAW")
@@ -66,38 +74,29 @@ def get_pipeline(config, model, augment_only=False):
                     mode='peak'))
     
     # simple_augment = gp.SimpleAugment(
-    #     mirror_only=[1, 2, 3],
-    #     transpose_only=[2, 3])  # this should be x and y, but I am not sure if
+    #     mirror_only=[1, 2],
+    #     transpose_only=[1, 2])  # this should be x and y, but I am not sure if
         # z (which we want to exclude) is dim 1 or dim 3
 
     augmentation_pipeline = (
             (points_source, csv_source) + gp.MergeProvider() +
             rasterize_graph + 
-            gp.RandomLocation()) # +
-           # simple_augment) 
+            gp.RandomLocation()) 
     if augment_only:
         return augmentation_pipeline
     
-
-    loss = ...
-    opt = ...
-
     train_node = gp.torch.Train(
         model=model,
         loss=loss,
-        optimizer=opt,
+        optimizer=optimizer,
         checkpoint_basename="train_linajea",
-        inputs={ 'raw': raw_key, },
-        outputs={"pred_indicator": cell_indicator},
-        loss_inputs={"points": points_key},
+        inputs={ "x": raw_key, }, # argment name of unet forward function parameters
+        outputs={0: pred_cell_indicator}, # output layer name of network (we didn't name our layers)
+        loss_inputs={0: cell_indicator, 1: pred_cell_indicator},  # index into the loss forward function parameters
         log_dir="train_logs",
         save_every=100
     )
 
-    # construct a request that will determine the inputs and
-    # outputs that we get
-    input_size = ...
-    output_size = ...
     request = gp.BatchRequest()
     request.add(raw_key, gp.Coordinate(input_size))
     request.add(points_key, gp.Coordinate(input_size))
@@ -128,6 +127,8 @@ def get_pipeline(config, model, augment_only=False):
     # add training, snapshots, and profiling to the pipeline
     train_pipeline = (
         augmentation_pipeline +
+        gp.Unsqueeze([raw_key, cell_indicator]) +
+        gp.Stack(1) +
         train_node +
         snapshot_node +
         print_profiling
