@@ -23,6 +23,7 @@ dependencies = [
   "gunpowder",
   "daisy",
   "torch",
+  "motile_plugin @ git+https://github.com/funkelab/motile-napari-plugin.git",
   "linajea @git+https://github.com/funkelab/linajea.git",
 ]
 
