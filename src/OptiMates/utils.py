@@ -124,7 +124,7 @@ def write_csv_from_lT_to_lineaja(lT, path_to, start: int = 200, finish: int = 30
     with open(path_to, "w", newline="\n") as file:
         fieldnames = ["time", "positions_x", "positions_y", "positions_z", "id"]
         writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
+        # writer.writeheader()
         for node in csv_dict.keys():
             writer.writerow(
                 {
