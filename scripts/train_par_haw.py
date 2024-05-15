@@ -46,13 +46,17 @@ if __name__ == "__main__":
     model = get_model()
 
     loss = torch.nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters())
+    optimizer = torch.optim.AdamW(model.parameters())
 
     # construct a request that will determine the inputs and
     # outputs that we get
-
-    input_size =(3, 15, 128, 128)
-    output_size = (1, 15, 128, 128)
+    #valid
+    input_size =(3, 15, 128*2, 128*2)
+    output_size = (1, 15, 128*2, 128*2)
+    # same
+    # input_size =(3, 15, 128*4, 128*4) 
+    # output_size = (1, 15, 128*4-6, 128*4-6)
+    
     raw_key = gp.ArrayKey("RAW")
     points_key = gp.GraphKey("POINTS")
     cell_indicator = gp.ArrayKey('CELL_INDICATOR')
@@ -74,7 +78,7 @@ if __name__ == "__main__":
 
     with gp.build(pipeline):
         root =zarr.open("/home/ioannis.liaskas/test/test.zarr", 'w')
-        for i in range(3):
+        for i in range(10):
 
             batch = pipeline.request_batch(request)
             iteration = root.create_group(i)
