@@ -118,9 +118,9 @@ def to_motile(lT: lineageTree, crop: int = None, max_dist=200, max_skip_frames=1
 
 def write_csv_from_lT_to_lineaja(lT, path_to, start: int = 200, finish: int = 300):
     csv_dict = {}
-    for time in range(start, finish):
+    for i, time in enumerate(range(start, finish)):
         for node in lT.time_nodes[time]:
-            csv_dict[node] = {"pos": lT.pos[node], "t": time}
+            csv_dict[node] = {"pos": lT.pos[node], "t": i}
     with open(path_to, "w", newline="\n") as file:
         fieldnames = ["time", "positions_x", "positions_y", "positions_z", "id"]
         writer = csv.DictWriter(file, fieldnames=fieldnames)
@@ -129,9 +129,9 @@ def write_csv_from_lT_to_lineaja(lT, path_to, start: int = 200, finish: int = 30
             writer.writerow(
                 {
                     "time": csv_dict[node]["t"],
-                    "positions_z": csv_dict[node]["pos"][0],
+                    "positions_z": csv_dict[node]["pos"][2],
                     "positions_y": csv_dict[node]["pos"][1],
-                    "positions_x": csv_dict[node]["pos"][2],
+                    "positions_x": csv_dict[node]["pos"][0],
                     "id": node,
                 }
             )
