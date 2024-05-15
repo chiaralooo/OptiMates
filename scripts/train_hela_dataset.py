@@ -6,6 +6,11 @@ from funlib.learn.torch.models import UNet
 from OptiMates.train_linajea.train import run_training, get_pipeline
 import gunpowder as gp
 import matplotlib.pyplot as plt
+import logging
+import zarr
+
+import numpy as np
+logger = logging.basicConfig(level=logging.INFO)
 
 def hela_config():
     appdir = AppDirs("motile-plugin")
@@ -40,8 +45,8 @@ if __name__ == "__main__":
 
     # construct a request that will determine the inputs and
     # outputs that we get
-    input_size =(16, 256, 256)
-    output_size = (16, 256, 256)
+    input_size =(3, 256, 256)
+    output_size = (3, 256, 256)
 
     raw_key = gp.ArrayKey("RAW")
     points_key = gp.GraphKey("POINTS")
@@ -51,11 +56,13 @@ if __name__ == "__main__":
     request.add(points_key, gp.Coordinate(input_size))
     request.add(cell_indicator, gp.Coordinate(input_size))
     with gp.build(pipeline):
+        root =zarr.open("test.zarr")
         for i in range(5):
+
             batch = pipeline.request_batch(request)
-            print(f"Point: {batch.points_key}")
-            plt.imsave(f"test_raw_{i}.png", batch[raw_key]) 
-            plt.imsave(f"test_indicator_{i}.png", batch[cell_indicator]) 
+            iteration = root.create_group(i)
+            iteration["raw"] = batch[raw_key].data
+            iteration["cell_indicator"] = batch[cell_indicator].data
         
     # run_training(data_config, model)
 

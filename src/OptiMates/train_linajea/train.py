@@ -3,14 +3,6 @@ from funlib.learn.torch.models import UNet
 import gunpowder as gp
 import time
 
-# data_config = {
-#     "raw_channel": "t00000/s00/0",  
-#     "raw_data_path": "/group/dl4miacourse/....",
-#     "csv_path": "...",
-#     "frames": [200, 300],
-#     "ndims": 4
-# }
-
 
 
 def run_training(data_config, model):
@@ -49,7 +41,7 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key, points_key, voxel
 
 
 def get_pipeline(config, model, augment_only=False):
-    voxel_size = gp.Coordinate((1,5,1,1))
+    voxel_size = config['voxel_size']
 
     raw_key = gp.ArrayKey("RAW")
     points_key = gp.GraphKey("POINTS")
@@ -62,7 +54,7 @@ def get_pipeline(config, model, augment_only=False):
         config["csv_path"],
         raw_key,
         points_key,
-        config['voxel_size'],
+        voxel_size,
         config['ndims'])
 
     rasterize_graph = gp.RasterizeGraph(
@@ -80,8 +72,8 @@ def get_pipeline(config, model, augment_only=False):
 
     augmentation_pipeline = (
             (points_source, csv_source) + gp.MergeProvider() +
-            gp.RandomProvider() +
-            rasterize_graph) # +
+            rasterize_graph + 
+            gp.RandomLocation()) # +
            # simple_augment) 
     if augment_only:
         return augmentation_pipeline
