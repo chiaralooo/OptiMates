@@ -47,6 +47,7 @@ def get_pipeline(
     optimizer,
     input_size,
     output_size,
+    radius,
     augment_only=False
 ):
     voxel_size = config['voxel_size']
@@ -70,7 +71,7 @@ def get_pipeline(
                 cell_indicator,
                 array_spec=gp.ArraySpec(voxel_size=voxel_size),
                 settings=gp.RasterizationSettings(
-                    radius=20,  # set this based on data
+                    radius=radius,  # set this based on data
                     mode='peak'))
     
     # simple_augment = gp.SimpleAugment(
@@ -81,6 +82,7 @@ def get_pipeline(
     augmentation_pipeline = (
             (points_source, csv_source) + gp.MergeProvider() +
             rasterize_graph + 
+            #gp.IterateLocations(points_key))
             gp.RandomLocation()) 
     if augment_only:
         return augmentation_pipeline
