@@ -153,6 +153,7 @@ dmypy.json
 
 Fluo*
 *.zarr
+*.csv
 
 # pytype static type analyzer
 .pytype/
