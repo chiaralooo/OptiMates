@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 import logging
 import zarr
 from tifffile import imread
-import os 
+import os
+import torch
+import torch.optim
 
 import numpy as np
 
@@ -19,9 +21,9 @@ logger = logging.basicConfig(level=logging.INFO)
 def celegans_config(zarrStore):
     
     return {
-        "raw_channel": "",  
+        "raw_channel": "raw/GCamp6s",  
         "raw_data_path": zarrStore,
-        "csv_path": "/group/dl4miacourse/projects/OptiMates/TRNs_calcium/batch1/GN692_125kPa002_20231017-142851.csv",
+        "csv_path": "/group/dl4miacourse/projects/OptiMates/TRNs_calcium/batch1/tracks/GN692_125kPa002_20231017-142851.csv",
         "ndims": 3,
         "voxel_size": (1, 1, 1)
     }
@@ -43,18 +45,20 @@ def get_model():
 
 if __name__ == "__main__":
     dataPath = r'/group/dl4miacourse/projects/OptiMates/TRNs_calcium/batch1'
-    fname = r'GN692_125kPa002_20231017-142851.tif'
-    fname = os.path.join(dataPath, fname)
-    zarrStore = imread(fname, aszarr=True)
-    data_config = celegans_config(zarrStore)
+    fname = r'GN692_125kPa002_20231017-142851.zarr'
+    fnameZarr = os.path.join(dataPath, fname)
+    data_config = celegans_config(fnameZarr)
     model = get_model() 
-    pipeline = get_pipeline(data_config, model, augment_only=True)
-
+    optimizer = torch.optim.Adam(model.parameters())
 
     # construct a request that will determine the inputs and
     # outputs that we get
     input_size =(3, 256, 256)
     output_size = (3, 256, 256)
+
+    pipeline = get_pipeline(data_config, model, torch.nn.MSELoss(), optimizer, input_size, output_size, radius=(0,5,5), augment_only=True)
+
+
 
     raw_key = gp.ArrayKey("RAW")
     points_key = gp.GraphKey("POINTS")
@@ -64,8 +68,9 @@ if __name__ == "__main__":
     request.add(points_key, gp.Coordinate(input_size))
     request.add(cell_indicator, gp.Coordinate(input_size))
     with gp.build(pipeline):
-        root = zarr.open('test.zar')
-        for i in range(5):
+        root = zarr.open("test.zarr", 'w')
+        for i in range(10):
+            print(i)
 
             batch = pipeline.request_batch(request)
             iteration = root.create_group(i)
