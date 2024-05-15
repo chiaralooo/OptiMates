@@ -2,6 +2,7 @@ from re import T
 from funlib.learn.torch.models import UNet
 import gunpowder as gp
 import time
+import numpy as np
 
 
 
@@ -12,7 +13,7 @@ def run_training(data_config, model):
         max_iterations = 100  # you will definitely want more iterations
         print("Starting training...")
         for i in max_iterations:
-            start = time.time()
+            start = time.time(raw_key)
             pipeline.request_batch(request)
             time_of_iteration = time.time() - start
 
@@ -25,12 +26,13 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key, points_key, voxel
     raw_spec = {
         raw_key: gp.ArraySpec(
             interpolatable=True,
-            voxel_size=voxel_size)
+            voxel_size=voxel_size,
+            dtype = np.int16)
     }
     raw_source = (gp.ZarrSource(
             raw_data_path,
             datasets={raw_key: raw_channel},
-            array_specs=raw_spec) + gp.Normalize(raw_key))
+            array_specs=raw_spec) + gp.Normalize(raw_key, factor = 1.0 / 10_000))
     csv_source = gp.CsvPointsSource(
         csv_path,
         points_key,
@@ -90,17 +92,17 @@ def get_pipeline(
         loss=loss,
         optimizer=optimizer,
         checkpoint_basename="train_linajea",
-        inputs={ "x": raw_key, }, # argment name of unet forward function parameters
+        inputs={ "input": raw_key, }, # argment name of unet forward function parameters
         outputs={0: pred_cell_indicator}, # output layer name of network (we didn't name our layers)
-        loss_inputs={0: cell_indicator, 1: pred_cell_indicator},  # index into the loss forward function parameters
+        loss_inputs={0: pred_cell_indicator, 1: cell_indicator},  # index into the loss forward function parameters
         log_dir="train_logs",
         save_every=100
     )
 
     request = gp.BatchRequest()
     request.add(raw_key, gp.Coordinate(input_size))
-    request.add(points_key, gp.Coordinate(input_size))
-    request.add(cell_indicator, gp.Coordinate(input_size))
+    request.add(points_key, gp.Coordinate(output_size))
+    request.add(cell_indicator, gp.Coordinate(output_size))
     request.add(pred_cell_indicator, gp.Coordinate(output_size))
 
     # construct snapshots for debugging purposes
@@ -128,7 +130,7 @@ def get_pipeline(
     train_pipeline = (
         augmentation_pipeline +
         gp.Unsqueeze([raw_key, cell_indicator]) +
-        gp.Stack(1) +
+        # gp.Stack(1) +
         train_node +
         snapshot_node +
         print_profiling
