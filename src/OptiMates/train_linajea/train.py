@@ -83,7 +83,9 @@ def get_pipeline(
             (points_source, csv_source) + gp.MergeProvider() +
             rasterize_graph + 
             #gp.IterateLocations(points_key))
-            gp.RandomLocation()) 
+            gp.RandomLocation() +
+            gp.Reject(ensure_nonempty=points_key, reject_probability=0.9)
+            ) 
     if augment_only:
         return augmentation_pipeline
     
