@@ -7,6 +7,7 @@ from funlib.learn.torch.models import UNet
 from OptiMates.train_linajea.train import run_training, get_pipeline
 import gunpowder as gp
 import matplotlib.pyplot as plt
+from tqdm import trange
 
 
 def hela_config():
@@ -51,8 +52,8 @@ if __name__ == "__main__":
     # construct a request that will determine the inputs and
     # outputs that we get
     #valid
-    input_size =(3, 15, 128*2, 128*2)
-    output_size = (1, 15, 128*2, 128*2)
+    input_size =(3, 15, 128, 128)
+    output_size = (1, 15, 128, 128)
     # same
     # input_size =(3, 15, 128*4, 128*4) 
     # output_size = (1, 15, 128*4-6, 128*4-6)
@@ -73,13 +74,13 @@ if __name__ == "__main__":
         optimizer,
         input_size,
         output_size,
-        radius=10
+        radius=5
         # augment_only=False
         )
 
     with gp.build(pipeline):
         root =zarr.open("/home/ioannis.liaskas/test/test.zarr", 'w')
-        for i in range(10):
+        for i in trange(1000):
 
             batch = pipeline.request_batch(request)
             iteration = root.create_group(i)
