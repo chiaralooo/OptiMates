@@ -1,5 +1,7 @@
 *.zarr
 .DS_Store
+*checkpoint*
+train_logs
 
 led / optimized / DLL files
 __pycache__/

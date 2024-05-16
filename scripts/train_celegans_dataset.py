@@ -31,7 +31,7 @@ def celegans_config(zarrStore):
 def get_model():
     # these are default values
     # You will need to change them for your training
-    return UNet(
+    unet= UNet(
             in_channels=1,
             num_fmaps=16,
             fmap_inc_factor=2,
@@ -42,6 +42,24 @@ def get_model():
             constant_upsample=True,
             padding='same')
 
+    conv = torch.nn.Conv3d(16,1,1)
+    sigm = torch.nn.Sigmoid()
+    return torch.nn.Sequential(unet, conv)
+
+
+class WeightedMSELoss(torch.nn.Module):
+    """Wraps a set of torch losses and tensorboard summaries used to train
+    the tracking model of Linajea
+    """
+    def __init__(self):
+        super().__init__()
+
+
+    def forward(inputs, target, mask):
+        ws = mask.sum() * inputs.size()[0] / mask.size()[0]
+        if abs(ws) <= 0.001:
+            ws = 1
+        return (mask * ((inputs - target) ** 2)).sum() / ws
 
 if __name__ == "__main__":
     dataPath = r'/group/dl4miacourse/projects/OptiMates/TRNs_calcium/batch1'
@@ -56,26 +74,41 @@ if __name__ == "__main__":
     input_size =(3, 256, 256)
     output_size = (3, 256, 256)
 
-    pipeline = get_pipeline(data_config, model, torch.nn.MSELoss(), optimizer, input_size, output_size, radius=(0,5,5), augment_only=True)
+
+    loss = WeightedMSELoss()
+
+    pipeline, request = get_pipeline(data_config, model, torch.nn.MSE(), optimizer, input_size, output_size, name="weighted_loss", radius=(0,5,5))
+    debug = False
+    if debug:
 
 
+        raw_key = gp.ArrayKey("RAW")
+        points_key = gp.GraphKey("POINTS")
+        cell_indicator = gp.ArrayKey('CELL_INDICATOR')
+        pred_cell_indicator = gp.ArrayKey('PRED_CELL_INDICATOR')
+        request = gp.BatchRequest()
+        request.add(raw_key, gp.Coordinate(input_size))
+        request.add(points_key, gp.Coordinate(input_size))
+        request.add(cell_indicator, gp.Coordinate(input_size))
+        request.add(pred_cell_indicator, gp.Coordinate(output_size))
+        with gp.build(pipeline):
+            root = zarr.open("test_training.zarr", 'w')
+            for i in range(10):
+                print(i)
 
-    raw_key = gp.ArrayKey("RAW")
-    points_key = gp.GraphKey("POINTS")
-    cell_indicator = gp.ArrayKey('CELL_INDICATOR')
-    request = gp.BatchRequest()
-    request.add(raw_key, gp.Coordinate(input_size))
-    request.add(points_key, gp.Coordinate(input_size))
-    request.add(cell_indicator, gp.Coordinate(input_size))
-    with gp.build(pipeline):
-        root = zarr.open("test.zarr", 'w')
-        for i in range(10):
-            print(i)
+                batch = pipeline.request_batch(request)
+                iteration = root.create_group(i)
+                iteration["raw"] = batch[raw_key].data
+                iteration["cell_indicator"] = batch[cell_indicator].data
+                iteration["pred_cell_indicator"] = batch[pred_cell_indicator].data
+    else:
+        # Training 3: no sigmoid, MSE loss
+        # Training 4: training 3 with normalize factor 1/4000
 
-            batch = pipeline.request_batch(request)
-            iteration = root.create_group(i)
-            iteration["raw"] = batch[raw_key].data
-            iteration["cell_indicator"] = batch[cell_indicator].data
-        
-    # run_training(data_config, model)
+        get_pipeline(data_config, model, loss, optimizer, input_size, output_size, name="training3", radius=(0,5,5))
 
+        with gp.build(pipeline):
+            max_iterations = 101  # you will definitely want more iterations
+            print("Starting training...")
+            for i in range(max_iterations):
+                pipeline.request_batch(request)

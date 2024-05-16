@@ -30,7 +30,7 @@ def get_sources(raw_data_path, raw_channel, csv_path, raw_key, points_key, voxel
     raw_source = (gp.ZarrSource(
             raw_data_path,
             datasets={raw_key: raw_channel},
-            array_specs=raw_spec) + gp.Normalize(raw_key))
+            array_specs=raw_spec) )
     csv_source = gp.CsvPointsSource(
         csv_path,
         points_key,
@@ -48,6 +48,7 @@ def get_pipeline(
     input_size,
     output_size,
     radius,
+    name,
     augment_only=False
 ):
     voxel_size = config['voxel_size']
@@ -55,6 +56,7 @@ def get_pipeline(
     raw_key = gp.ArrayKey("RAW")
     points_key = gp.GraphKey("POINTS")
     cell_indicator = gp.ArrayKey('CELL_INDICATOR')
+    cell_mask = gp.ArrayKey('CELL_MASK')
     pred_cell_indicator = gp.ArrayKey('PRED_CELL_INDICATOR')
 
     points_source, csv_source = get_sources(
@@ -74,6 +76,14 @@ def get_pipeline(
                     radius=radius,  # set this based on data
                     mode='peak'))
     
+    points_mask = gp.RasterizeGraph(
+                points_key,
+                cell_mask,
+                array_spec=gp.ArraySpec(voxel_size=voxel_size),
+                settings=gp.RasterizationSettings(
+                    radius=radius*2,  # set this based on data
+                    mode='ball'))
+    
     # simple_augment = gp.SimpleAugment(
     #     mirror_only=[1, 2],
     #     transpose_only=[1, 2])  # this should be x and y, but I am not sure if
@@ -82,8 +92,10 @@ def get_pipeline(
     augmentation_pipeline = (
             (points_source, csv_source) + gp.MergeProvider() +
             rasterize_graph + 
+            points_mask +
             #gp.IterateLocations(points_key))
             gp.RandomLocation() +
+            gp.Normalize(raw_key, factor=1/4000) +
             gp.Reject(ensure_nonempty=points_key, reject_probability=0.9)
             ) 
     if augment_only:
@@ -93,8 +105,8 @@ def get_pipeline(
         model=model,
         loss=loss,
         optimizer=optimizer,
-        checkpoint_basename="train_linajea",
-        inputs={ "x": raw_key, }, # argment name of unet forward function parameters
+        checkpoint_basename=name,
+        inputs={ "input": raw_key, }, # argment name of unet forward function parameters
         outputs={0: pred_cell_indicator}, # output layer name of network (we didn't name our layers)
         loss_inputs={0: cell_indicator, 1: pred_cell_indicator},  # index into the loss forward function parameters
         log_dir="train_logs",
