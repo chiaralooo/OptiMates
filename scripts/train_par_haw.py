@@ -73,6 +73,7 @@ if __name__ == "__main__":
         optimizer,
         input_size,
         output_size,
+        radius=10
         # augment_only=False
         )
 

@@ -129,9 +129,9 @@ def write_csv_from_lT_to_lineaja(lT, path_to, start: int = 200, finish: int = 30
             writer.writerow(
                 {
                     "time": csv_dict[node]["t"],
-                    "positions_z": csv_dict[node]["pos"][2],
+                    "positions_z": csv_dict[node]["pos"][0],
                     "positions_y": csv_dict[node]["pos"][1],
-                    "positions_x": csv_dict[node]["pos"][0],
+                    "positions_x": csv_dict[node]["pos"][2],
                     "id": node,
                 }
             )
@@ -149,8 +149,9 @@ def write_csv_from_lT_to_lineaja_celegans(lT, path_to, start: int = 200, finish:
             writer.writerow(
                 {
                     "time": csv_dict[node]["t"],
-                    "positions_y": csv_dict[node]["pos"][0],
-                    "positions_x": csv_dict[node]["pos"][1],
+                    "positions_z": csv_dict[node]["pos"][0],
+                    "positions_y": csv_dict[node]["pos"][1],
+                    "positions_x": csv_dict[node]["pos"][2],
                     "id": node,
                 }
             )
