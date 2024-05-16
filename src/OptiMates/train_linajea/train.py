@@ -6,6 +6,7 @@ import numpy as np
 
 
 
+
 def run_training(data_config, model):
     pipeline, request = get_pipeline(data_config, model)
 
@@ -80,16 +81,25 @@ def get_pipeline(
     #     mirror_only=[1, 2],
     #     transpose_only=[1, 2])  # this should be x and y, but I am not sure if
         # z (which we want to exclude) is dim 1 or dim 3
-
+    
     augmentation_pipeline = (
             (points_source, csv_source) + gp.MergeProvider() +
             rasterize_graph + 
             #gp.IterateLocations(points_key))
-            gp.RandomLocation() +
-            gp.Reject(ensure_nonempty=points_key, reject_probability=0.9)
+            gp.RandomLocation(ensure_nonempty=points_key) +
+            gp.Reject(ensure_nonempty=points_key, reject_probability=1)
             ) 
     if augment_only:
         return augmentation_pipeline
+    # empty_pipeline = (
+    #         (points_source, csv_source) + gp.MergeProvider() +
+    #         rasterize_graph + 
+    #         #gp.IterateLocations(points_key))
+    #         gp.RandomLocation(ensure_nonempty=points_key)+
+    #         gp.Reject(ensure_nonempty=points_key, reject_probability=0.95)
+    
+    # )
+
     
     train_node = gp.torch.Train(
         model=model,
@@ -99,7 +109,7 @@ def get_pipeline(
         inputs={ "input": raw_key, }, # argment name of unet forward function parameters
         outputs={0: pred_cell_indicator}, # output layer name of network (we didn't name our layers)
         loss_inputs={0: pred_cell_indicator, 1: cell_indicator},  # index into the loss forward function parameters
-        log_dir="train_logs",
+        log_dir="/home/ioannis.liaskas/test/log_dir",
         save_every=100
     )
 

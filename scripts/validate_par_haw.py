@@ -83,9 +83,9 @@ if __name__ == "__main__":
         for i in trange(1000):
 
             batch = pipeline.request_batch(request)
-            iteration = root.create_group(i)
+            # iteration = root.create_group(i)
             # iteration["raw"] = batch[raw_key].data
             # iteration["cell_indicator"] = batch[cell_indicator].data
             # iteration["pred_indicator"] = batch[pred_cell_indicator].data
     # run_training(data_config, model)
-            
+    
