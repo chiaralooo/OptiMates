@@ -44,7 +44,7 @@ def get_model():
 
     conv = torch.nn.Conv3d(16,1,1)
     sigm = torch.nn.Sigmoid()
-    return torch.nn.Sequential(unet, conv)
+    return torch.nn.Sequential(unet, conv, sigm)
 
 
 class WeightedMSELoss(torch.nn.Module):
@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
     loss = WeightedMSELoss()
 
-    pipeline, request = get_pipeline(data_config, model, torch.nn.MSE(), optimizer, input_size, output_size, name="weighted_loss", radius=(0,5,5))
+    pipeline, request = get_pipeline(data_config, model, torch.nn.MSELoss(), optimizer, input_size, output_size, name="weighted_loss", radius=(0,5,5))
     debug = False
     if debug:
 
@@ -103,9 +103,10 @@ if __name__ == "__main__":
                 iteration["pred_cell_indicator"] = batch[pred_cell_indicator].data
     else:
         # Training 3: no sigmoid, MSE loss
-        # Training 4: training 3 with normalize factor 1/4000
+        # Training 4: training 3 with normalize factor 1/4000 - this WORKED!
+        # Training 5: added back in sigmoid
 
-        get_pipeline(data_config, model, loss, optimizer, input_size, output_size, name="training3", radius=(0,5,5))
+        get_pipeline(data_config, model, loss, optimizer, input_size, output_size, name="training5", radius=(0,5,5))
 
         with gp.build(pipeline):
             max_iterations = 101  # you will definitely want more iterations
